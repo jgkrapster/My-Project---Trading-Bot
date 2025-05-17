@@ -1,9 +1,12 @@
 **MetaTrader5 Gold Trading Bot**
+
 **Project Overview**
+
 This project implements an automated trading bot designed to trade Gold (XAUUSD) using the MetaTrader5 platform. The bot leverages the SuperTrend indicator, a popular technical analysis tool, to generate buy and sell signals. By continuously monitoring market conditions and executing trades based on predefined criteria, the bot aims to capitalize on price movements in the gold market without requiring constant manual intervention.
 
 The trading strategy is built around the SuperTrend indicator with specifically calibrated parameters (period=7, multiplier=3) to identify potential trend changes in the gold market. When the closing price crosses above the SuperTrend line, a buy signal is generated; conversely, when it crosses below, a sell signal is triggered. The bot includes sophisticated position management features, including dynamic stop-loss adjustments to protect profits as trades move in favorable directions.
 **Components and Functionality**
+
 **Data Collection and Preparation**
 The bot connects to MetaTrader5 to retrieve historical price data for gold (XAUUSD) using the copy_rates_range function. It processes this data into a pandas DataFrame to facilitate technical analysis. The code handles timezone conversions appropriately, ensuring that all data is synchronized to the correct market time (America/New York).
 pythonend_datetime = target_timezone.localize(datetime.now())
@@ -33,6 +36,7 @@ The bot includes three essential order management functions:
 **modify_order():** Dynamically adjusts stop-loss levels to protect profits as trades move favorably
 
 These functions interface with the MetaTrader5 API to execute actual trades in the market. The implementation follows best practices by specifying all necessary order parameters including magic number for trade identification and appropriate time and filling types.
+
 **Position Management and Risk Control**
 Risk management is implemented through carefully calculated stop-loss and take-profit levels:
 
