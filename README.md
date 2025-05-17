@@ -1,4 +1,9 @@
-**MetaTrader5 Gold Trading Bot**
+**Title:**: MetaTrader5 Gold Trading Bot
+
+**Video Demo:** https://youtu.be/j3sd7CD4824 
+
+**Description:**
+
 
 **Project Overview**
 
