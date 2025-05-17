@@ -94,3 +94,5 @@ Developing a more sophisticated trailing stop mechanism
 Adding functionality to trade multiple instruments simultaneously
 
 This trading bot represents a solid foundation for algorithmic gold trading that can be extended and customized for various market conditions and trading preferences.
+
+submit50 cs50/problems/2025/x/project
