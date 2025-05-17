@@ -1,1 +1,210 @@
+import MetaTrader5 as mt
+from datetime import datetime
+import pandas as pd
+mt.initialize()
+mt.account_info()
+import pandas as pd
+import datetime
+import pytz
+local_time = datetime.datetime(2023, 9, 21, 12, 0, 0)
+# Define the target timezone (GMT+3:00)
+target_timezone = pytz.timezone('America/New_York')
+
+# Convert the datetime to the target timezone
+converted_time = local_time.astimezone(target_timezone)
+from datetime import datetime
+# Define the start and end datetime objects in the target timezone
+end_datetime = target_timezone.localize(datetime.now())
+
+data1 = mt.copy_rates_range('XAUUSD',mt.TIMEFRAME_M1,datetime(2022,1,1),end_datetime)
+ohlc = pd.DataFrame(data1)
+ohlc
+ohlc['time']=pd.to_datetime(ohlc['time'],unit='s')
+ohlc
+import pandas_ta as ta
+ta.supertrend(high=ohlc['high'],low=ohlc['low'],close=ohlc['close'],period=8,multiplier=3)
+ohlc['sup'] = ta.supertrend(high=ohlc['high'],low=ohlc['low'],close=ohlc['close'],period=7,multiplier=3)['SUPERT_7_3.0']
+ohlc.tail(20)
+ohlc['Buy Signal'] = 0
+ohlc['Sell Signal'] = 0
+n=6
+for i in range(n,len(ohlc)):
+    if ohlc['close'][i-1]<=ohlc['sup'][i-1] and ohlc['close'][i]>ohlc['sup'][i]:
+        ohlc['Buy Signal'][i] = 1
+    if ohlc['close'][i-1]>=ohlc['sup'][i-1] and ohlc['close'][i]<ohlc['sup'][i]:
+        ohlc['Sell Signal'][i] = 1
+xa=ohlc[ (ohlc['Buy Signal'] > 0) | (ohlc['Sell Signal'] > 0)]
+xa.tail(20)
+Current_Buy_Signal= list(xa[-1:]['Buy Signal'])[0]
+Current_Sell_Signal = list(xa[-1:]['Sell Signal'])[0]
+
+print('Buy Signal',Current_Buy_Signal)
+print('Sell Signal',Current_Sell_Signal)
+if Current_Buy_Signal == 1 and Current_Sell_Signal == 0:
+    print('Buy Position Taken')
+if Current_Buy_Signal == 0 and Current_Sell_Signal == 1:
+    print('Sell Position Taken')
+else:
+    print ('Waiting for Signal')
+    import time
+#Trading Bot
+
+#trading bot
+
+ticker = 'XAUUSD.r'
+qty= 0.5
+deviation = 20
+
+buy_order_type= mt.ORDER_TYPE_BUY
+sell_order_type=mt.ORDER_TYPE_SELL
+buy_price = mt.symbol_info_tick(ticker).ask
+sell_price = mt.symbol_info_tick(ticker).bid
+
+sl_pct=0.0006
+tp_pct=0.0090
+
+buy_sl= buy_price*(1-sl_pct)
+buy_tp= buy_price*(1+tp_pct)
+
+sell_sl=sell_price*(1+sl_pct)
+sell_tp=sell_price*(1-tp_pct)
+
+def create_order(ticker, qty, order_type, price,sl,tp):
+    request = { 
+    "action": mt.TRADE_ACTION_DEAL, 
+    "symbol": ticker, 
+    "volume": qty, 
+    "type": order_type, 
+    "price": price, 
+    "sl": sl, 
+    "tp": tp, 
+    "deviation": deviation, 
+    "magic": 234000, 
+    "comment": "python open Position", 
+    "type_time": mt.ORDER_TIME_GTC, 
+    "type_filling": mt.ORDER_FILLING_IOC,
+}
+    
+    order= mt.order_send(request)
+    return order
+
+def close_order(ticker, qty, order_type, price):
+    request={ 
+    "action": mt.TRADE_ACTION_DEAL, 
+    "symbol": ticker, 
+    "volume": qty, 
+    "type": order_type, 
+    "position": mt.positions_get()[0]._asdict()['ticket'], 
+    "price": price, 
+    "deviation": deviation, 
+    "magic": 234000, 
+    "comment": "close position", 
+    "type_time": mt.ORDER_TIME_GTC, 
+    "type_filling": mt.ORDER_FILLING_IOC, 
+} 
+    order=mt.order_send(request)
+
+def modify_order(ticker, qty, order_type, price,new_sl):
+    request={ 
+    "action": mt.TRADE_ACTION_SLTP, 
+    "symbol": ticker, 
+    "volume": qty, 
+    "type": order_type, 
+    "sl": new_sl,    
+    "position": mt.positions_get()[0]._asdict()['ticket'], 
+    "price": price, 
+    "comment": "modify position", 
+    "type_time": mt.ORDER_TIME_GTC, 
+    "type_filling": mt.ORDER_FILLING_IOC, 
+} 
+    order=mt.order_send(request)    
+ 
+    
+    
+#Condition
+buy_price = mt.symbol_info_tick(ticker).ask
+sell_price = mt.symbol_info_tick(ticker).bid
+
+for i in range(999999999):
+    
+    
+    if len(mt.positions_get()) > 0:
+        if mt.positions_get()[0]._asdict()['type']== 0 and buy_price > mt.positions_get()[0]._asdict()['price_open']:
+                    new_stop_loss = buy_price - 35 * mt.symbol_info(ticker).point
+                    modify_order(ticker, qty, buy_order_type, buy_price,new_stop_loss)
+                    print('Buy Stop Loss Modified To: ', new_stop_loss)
+        elif mt.positions_get()[0]._asdict()['type']==1 and sell_price < mt.positions_get()[0]._asdict()['price_open']:
+                    new_stop_loss = sell_price + 35 * mt.symbol_info(ticker).point
+                    modify_order(ticker, qty, sell_order_type, sell_price,new_stop_loss)
+                    print('Sell Stop Loss Modified To: ',new_stop_loss)
+        
+    
+    data1 = mt.copy_rates_range('XAUUSD.r',mt.TIMEFRAME_M5,datetime(2023,1,1),end_datetime)
+    ohlc = pd.DataFrame(data1)
+    ohlc['time']=pd.to_datetime(ohlc['time'],unit='s')
+    ohlc
+    
+    ohlc['sup'] = ta.supertrend(high=ohlc['high'],low=ohlc['low'],close=ohlc['close'],period=7,multiplier=3)['SUPERT_7_3.0']
+    
+    ohlc['Buy Signal'] = 0
+    ohlc['Sell Signal'] = 0
+    n=6
+    
+    for i in range(n,len(ohlc)):
+        if ohlc['close'][i-1]<=ohlc['sup'][i-1] and ohlc['close'][i]>ohlc['sup'][i]:
+            ohlc['Buy Signal'][i] = 1
+        if ohlc['close'][i-1]>=ohlc['sup'][i-1] and ohlc['close'][i]<ohlc['sup'][i]:
+            ohlc['Sell Signal'][i] = 1
+    
+    print(ohlc)
+        
+    Current_Buy_Signal= list(ohlc[-1:]['Buy Signal'])[0]
+    Current_Sell_Signal = list(ohlc[-1:]['Sell Signal'])[0]
+    previous_Buy_Signal = list(ohlc[-2:]['Buy Signal'])[0]
+    previous_Sell_Signal = list(ohlc[-2:]['Sell Signal'])[0]
+
+    print('Buy Signal',Current_Buy_Signal)
+    print('Sell Signal',Current_Sell_Signal)
+    
+    already_buy = False
+    already_sell = False
+    
+    try:
+        already_sell = mt.positions_get()[0]._asdict()['type']==1
+        already_buy = mt.positions_get()[0]._asdict()['type']==0
+    except:
+        pass
+
+    no_positions = len(mt.positions_get()) == 0
+    last_executed_signal = None
+
+    if (Current_Buy_Signal == 1 and Current_Sell_Signal == 0) or (previous_Buy_Signal == 1 and previous_Sell_Signal == 0) and last_executed_signal != 'Buy':
+        if no_positions:
+            create_order(ticker, qty, buy_order_type, buy_price,buy_sl,buy_tp)
+            print('buy order placed')
+        if already_sell:
+            close_order(ticker, qty, buy_order_type,buy_price)
+            print('sell position closed')
+            time.sleep(1)
+            create_order(ticker, qty, buy_order_type, buy_price,buy_sl,buy_tp)
+            print('buy order placed')
+        last_executed_signal = 'Buy'    
+    if (Current_Buy_Signal == 0 and Current_Sell_Signal == 1) or (previous_Buy_Signal == 0 and previous_Sell_Signal == 1) and last_executed_signal != 'Sell':
+        if no_positions:
+            create_order(ticker, qty, sell_order_type, sell_price,sell_sl,sell_tp)
+            print('sell Order Placed')
+        if already_buy:
+            close_order(ticker, qty, sell_order_type,sell_price)
+            print('buy position closed')
+            time.sleep(1)
+            create_order(ticker, qty, sell_order_type, sell_price,sell_sl,sell_tp)
+            print('sell order placed')
+        last_executed_signal = 'Sell'    
+    if Current_Buy_Signal == 0 and Current_Sell_Signal == 0:
+        print('Waiting For Next Signal')
+    already_buy = False
+    already_sell = False
+    time.sleep(300)
+
+
 
